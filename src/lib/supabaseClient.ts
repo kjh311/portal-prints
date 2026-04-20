@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+export const replicateApiToken = import.meta.env.VITE_REPLICATE_API_TOKEN;
 
 if (!supabaseUrl || !supabaseAnonKey) {
   console.error('Portal Prints: Supabase configuration missing from environment variables.');

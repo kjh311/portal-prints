@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabaseClient';
+import { supabase, replicateApiToken } from '../lib/supabaseClient';
 
 /**
  * Portal Prints Background Service Worker
@@ -29,19 +29,97 @@ async function handleCapture(payload: { image: string; title: string; url: strin
 
   // 2. Process Image (Base64 -> Blob)
   const blob = await dataURLtoBlob(image);
-  const fileName = `${user.id}/${Date.now()}.png`;
 
-  // 3. Upload to Supabase Storage
+  // 3. Upload raw image to Supabase Storage (temporary)
+  const tempFileName = `${user.id}/${Date.now()}_raw.png`;
+  const { error: tempError } = await supabase.storage
+    .from('screenshots')
+    .upload(tempFileName, blob, {
+      contentType: 'image/png',
+      upsert: false
+    });
+
+  if (tempError) throw new Error(`Temp Storage Error: ${tempError.message}`);
+
+  // 4. Get public URL for the uploaded image
+  const { data: tempUrlData } = supabase.storage
+    .from('screenshots')
+    .getPublicUrl(tempFileName);
+
+  const imageUrl = tempUrlData.publicUrl;
+
+  // 5. Send to Replicate's CodeFormer API
+  if (!replicateApiToken) {
+    throw new Error('Replicate API token not configured. Please add VITE_REPLICATE_API_TOKEN to .env');
+  }
+
+  const replicateResponse = await fetch('https://api.replicate.com/v1/sczhou/codeformer', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Token ${replicateApiToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      version: '7c0144d6c4e76a9498f2406d711a9f80d6da5c9a3418e8617e5a96c0d5043c8e',
+      input: {
+        image: imageUrl,
+        face_upsample: true,
+        background_enhance: true,
+        codeformer_fidelity: 0.5,
+      },
+    }),
+  });
+
+  if (!replicateResponse.ok) {
+    const errorText = await replicateResponse.text();
+    throw new Error(`Replicate API Error: ${replicateResponse.status} - ${errorText}`);
+  }
+
+  const replicateData = await replicateResponse.json();
+  
+  // Poll for completion
+  let prediction = replicateData;
+  while (prediction.status === 'starting' || prediction.status === 'processing') {
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    const statusResponse = await fetch(`https://api.replicate.com/v1/predictions/${prediction.id}`, {
+      headers: {
+        'Authorization': `Token ${replicateApiToken}`,
+      },
+    });
+    
+    if (!statusResponse.ok) {
+      throw new Error(`Failed to check prediction status: ${statusResponse.status}`);
+    }
+    
+    prediction = await statusResponse.json();
+  }
+
+  if (prediction.status === 'failed') {
+    throw new Error(`Replicate prediction failed: ${prediction.error}`);
+  }
+
+  const enhancedImageUrl = prediction.output;
+
+  // 6. Download enhanced image from Replicate
+  const enhancedResponse = await fetch(enhancedImageUrl);
+  if (!enhancedResponse.ok) {
+    throw new Error(`Failed to download enhanced image: ${enhancedResponse.status}`);
+  }
+  const enhancedBlob = await enhancedResponse.blob();
+
+  // 7. Upload enhanced image to Supabase Storage
+  const enhancedFileName = `${user.id}/${Date.now()}.png`;
   const { data: storageData, error: storageError } = await supabase.storage
     .from('screenshots')
-    .upload(fileName, blob, {
+    .upload(enhancedFileName, enhancedBlob, {
       contentType: 'image/png',
       upsert: false
     });
 
   if (storageError) throw new Error(`Storage Error: ${storageError.message}`);
 
-  // 4. Record in Database
+  // 8. Record in Database
   const { error: dbError } = await supabase
     .from('captures')
     .insert({
@@ -52,6 +130,9 @@ async function handleCapture(payload: { image: string; title: string; url: strin
     });
 
   if (dbError) throw new Error(`Database Error: ${dbError.message}`);
+
+  // 9. Delete temporary raw image
+  await supabase.storage.from('screenshots').remove([tempFileName]);
 
   return { path: storageData.path };
 }
