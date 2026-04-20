@@ -1,0 +1,53 @@
+/* Portal Prints - Content Styles */
+
+#portal-prints-btn svg {
+  transition: transform 0.2s ease, fill 0.2s ease;
+}
+
+#portal-prints-btn:hover svg {
+  transform: scale(1.1);
+  fill: #3ea6ff; /* YouTube's accent blue */
+}
+
+/* Toast Notification */
+.portal-prints-toast {
+  position: fixed;
+  bottom: 50px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(40, 40, 40, 0.95);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-family: 'Roboto', Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  z-index: 9999;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  pointer-events: none;
+  animation: portal-pop-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.portal-prints-toast.error {
+  border-color: rgba(255, 78, 78, 0.5);
+  background: rgba(60, 20, 20, 0.95);
+}
+
+.portal-prints-toast.fade-out {
+  opacity: 0;
+  transform: translateX(-50%) translateY(20px);
+  transition: all 0.5s ease;
+}
+
+@keyframes portal-pop-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
