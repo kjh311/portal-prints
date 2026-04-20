@@ -1,0 +1,23 @@
+{
+  "name": "portal-prints",
+  "version": "1.0.0",
+  "description": "**Portal Prints** is a sleek Chrome Extension (Manifest V3) designed for high-quality frame capture from YouTube videos.",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.104.0"
+  },
+  "devDependencies": {
+    "@crxjs/vite-plugin": "^2.0.0-beta.33",
+    "@types/chrome": "^0.1.40",
+    "typescript": "^6.0.3",
+    "vite": "^6.4.2"
+  }
+}

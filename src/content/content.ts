@@ -1,9 +1,11 @@
+import './content.css';
+
 /**
  * Portal Prints Content Script
  * Handles button injection and frame capture from YouTube video element.
  */
 
-function createSvgIcon() {
+function createSvgIcon(): SVGElement {
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   svg.setAttribute('viewBox', '0 0 24 24');
   svg.setAttribute('fill', 'white');
@@ -41,7 +43,7 @@ function injectCaptureButton() {
 }
 
 async function captureFrame() {
-  const video = document.querySelector('video.video-stream.html5-main-video');
+  const video = document.querySelector('video.video-stream.html5-main-video') as HTMLVideoElement | null;
   if (!video) {
     showFeedback('Video element not found!', true);
     return;
@@ -52,37 +54,52 @@ async function captureFrame() {
   canvas.height = video.videoHeight;
   
   const ctx = canvas.getContext('2d');
+  if (!ctx) {
+    showFeedback('Could not initialize canvas context', true);
+    return;
+  }
   
   try {
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
     
-    const videoTitle = document.querySelector('h1.ytd-video-primary-info-renderer, .ytp-title-link, h1.style-scope.ytd-watch-metadata')?.innerText || document.title;
+    // Clean Video Title
+    const titleEl = document.querySelector('h1.ytd-video-primary-info-renderer, .ytp-title-link, h1.style-scope.ytd-watch-metadata') as HTMLElement | null;
+    let videoTitle = titleEl?.innerText || document.title;
+    videoTitle = videoTitle.replace(' - YouTube', '').trim();
+    
     const videoUrl = window.location.href;
 
-    await chrome.storage.local.set({
-      lastCapture: {
+    showFeedback('Processing cloud upload...');
+
+    // Ship to background script for Supabase processing
+    chrome.runtime.sendMessage({
+      type: 'CAPTURE_FRAME',
+      payload: {
         image: dataUrl,
-        title: videoTitle.trim(),
-        url: videoUrl,
-        timestamp: new Date().toISOString()
+        title: videoTitle,
+        url: videoUrl
+      }
+    }, (response) => {
+      if (response && response.success) {
+        showFeedback('Saved to Supabase Cloud!');
+      } else {
+        const errorMsg = response?.error || 'Cloud storage failed';
+        showFeedback(`Capture failed: ${errorMsg}`, true);
       }
     });
 
-    showFeedback('Snapshot captured!');
-  } catch (err) {
+  } catch (err: any) {
     console.error('Portal Prints Error:', err);
-    // Likely CORS or Trusted Types related
     if (err.name === 'SecurityError') {
       showFeedback('Access denied: YouTube restricted this frame.', true);
     } else {
-      showFeedback('Capture failed: ' + (err.message || 'Error saving'), true);
+      showFeedback('Capture failed: ' + (err.message || 'Error processing'), true);
     }
   }
 }
 
-function showFeedback(message, isError = false) {
-  // Remove existing toast if any
+function showFeedback(message: string, isError = false) {
   const existing = document.querySelector('.portal-prints-toast');
   if (existing) existing.remove();
 

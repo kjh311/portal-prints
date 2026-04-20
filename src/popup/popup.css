@@ -7,6 +7,8 @@
   --text-main: #f8fafc;
   --text-dim: #94a3b8;
   --glass-border: rgba(255, 255, 255, 0.1);
+  --input-bg: rgba(15, 23, 42, 0.5);
+  --google-blue: #4285f4;
 }
 
 * {
@@ -43,14 +45,66 @@ h1 {
   -webkit-text-fill-color: transparent;
 }
 
-.badge {
-  font-size: 0.7rem;
-  font-weight: 600;
-  background: rgba(56, 189, 248, 0.1);
-  color: var(--accent);
+#sign-out-btn {
+  background: transparent;
+  border: 1px solid var(--glass-border);
+  color: var(--text-dim);
   padding: 4px 10px;
-  border-radius: 20px;
-  border: 1px solid rgba(56, 189, 248, 0.2);
+  border-radius: 6px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+#sign-out-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-main);
+}
+
+/* Auth Section */
+.auth-buttons {
+  margin: 30px 0;
+  width: 100%;
+}
+
+.google-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: white;
+  color: #1f2937;
+  border: none;
+  padding: 12px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.google-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.google-btn:active {
+  transform: translateY(0);
+}
+
+.google-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+.hint {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  line-height: 1.4;
+  margin-top: 20px;
+  display: block;
 }
 
 /* States */
@@ -59,7 +113,7 @@ h1 {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 40px 20px;
+  padding: 40px 10px;
   text-align: center;
 }
 
@@ -67,21 +121,9 @@ h1 {
   display: none !important;
 }
 
-#empty-state .icon {
-  font-size: 3rem;
-  margin-bottom: 16px;
-  filter: drop-shadow(0 0 10px rgba(56, 189, 248, 0.3));
-}
-
-#empty-state p {
-  font-weight: 600;
-  margin-bottom: 8px;
-}
-
-#empty-state span {
-  font-size: 0.85rem;
-  color: var(--text-dim);
-  line-height: 1.5;
+.icon {
+  font-size: 2.5rem;
+  margin-bottom: 12px;
 }
 
 /* Capture Display */
